@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapSort</title>
+    <style>
+        :root {
+            --primary-color: #00d4ff;
+            --secondary-color: #ff00ff;
+            --success-color: #4CAF50;
+            --delete-color: #ff5252;
+            --text-light: #ffffff;
+            --text-dark: #1a1a2e;
+            --bg-dark: #1a1a2e;
+            --bg-light: #e0e0e0;
+            --shadow-color-light: rgba(0, 0, 0, 0.2);
+            --shadow-color-dark: rgba(0, 212, 255, 0.5);
+        }
+        
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s;
+            line-height: 1.6;
+        }
+        
+        #container {
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Hellmodus */
+        body.light {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+        
+        body.light #container {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        body.light .button {
+            color: var(--text-dark);
+        }
+        
+        /* Dunkelmodus */
+        body.dark {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+        }
+        
+        body.dark #container {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark .button {
+            color: var(--text-light);
+        }
+        
+        .button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px 5px;
+            min-width: 150px;
+        }
+        
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.7);
+        }
+        
+        .button:focus {
+            outline: 3px solid var(--primary-color);
+        }
+        
+        .button.small {
+            padding: 8px 16px;
+            font-size: 14px;
+            min-width: initial;
+        }
+        
+        #theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+        
+        #theme-toggle:hover {
+            transform: scale(1.05);
+        }
+        
+        #start-screen {
+            font-size: 24px;
+            color: var(--text-light);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+        }
+        
+        #info {
+            margin: 20px 0;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        #path, #filename, #image-counter {
+            margin: 10px 0;
+            font-size: 14px;
+            color: var(--primary-color);
+            text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+        }
+        
+        #image-container {
+            position: relative;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 700px;
+            height: 60vh;
+            max-height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #current-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 20px var(--shadow-color-dark);
+            display: none;
+            transition: transform 0.3s ease;
+        }
+        
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #image-container:hover .image-overlay {
+            opacity: 1;
+        }
+        
+        .overlay-left, .overlay-right {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .overlay-left {
+            background: linear-gradient(to right, rgba(76, 175, 80, 0.3), transparent);
+        }
+        
+        .overlay-right {
+            background: linear-gradient(to left, rgba(255, 82, 82, 0.3), transparent);
+        }
+        
+        .overlay-icon {
+            font-size: 3rem;
+            color: white;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        #controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .action-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .keep-button {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .delete-button {
+            background-color: var(--delete-color);
+            color: white;
+        }
+        
+        .action-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #delete-list-container {
+            max-height: 200px;
+            overflow: auto;
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        #delete-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        #delete-list li {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #delete-list li:hover {
+            background-color: rgba(255, 82, 82, 0.2);
+        }
+        
+        .restore-button {
+            background-color: transparent;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .restore-button:hover {
+            background-color: rgba(0, 212, 255, 0.2);
+        }
+        
+        .shortcut-hint {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+        
+        .loading-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .notification.visible {
+            opacity: 1;
+        }
+        
+        #keyboard-shortcuts {
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+            display: none;
+        }
+        
+        #keyboard-shortcuts h3 {
+            margin-top: 0;
+        }
+        
+        #keyboard-shortcuts ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        #keyboard-shortcuts li {
+            margin: 5px 0;
+        }
+        
+        #keyboard-shortcuts .key {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+        
+        #help-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        
+        #help-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #container {
+                padding: 20px 15px;
+                width: 95%;
+            }
+            
+            #image-container {
+                height: 40vh;
+            }
+            
+            .button {
+                padding: 10px 20px;
+                font-size: 14px;
+                min-width: 120px;
+            }
+            
+            #controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="dark" aria-live="polite">
+    <div id="container">
+        <button id="theme-toggle" aria-label="Farbschema wechseln">Light Mode ☀️</button>
+        <button id="help-button" aria-label="Hilfe anzeigen">?</button>
+        
+        <div id="start-screen" role="heading" aria-level="1">Wähle einen Ordner, um deine Bilder zu sortieren!</div>
+        <button id="select-folder" class="button" aria-label="Ordner auswählen">Ordner auswählen</button>
+        
+        <div id="path" aria-live="polite"></div>
+        <div id="filename" aria-live="polite"></div>
+        <div id="image-counter" aria-live="polite"></div>
+        
+        <div id="info" aria-live="polite"></div>
+        
+        <div id="image-container" style="display: none;">
+            <img id="current-image" src="" alt="Aktuelles Bild" tabindex="0">
+            <div id="loading" class="loading-animation" style="display: none;"></div>
+            <div class="image-overlay">
+                <div class="overlay-left" aria-label="Bild behalten">
+                    <span class="overlay-icon">✓</span>
+                </div>
+                <div class="overlay-right" aria-label="Bild in DELETE-Ordner verschieben">
+                    <span class="overlay-icon">✗</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="controls" style="display: none;">
+            <button id="keep-button" class="action-button keep-button" aria-label="Bild behalten">
+                Behalten <span class="shortcut-hint">←</span>
+            </button>
+            <button id="delete-button" class="action-button delete-button" aria-label="Bild in DELETE-Ordner verschieben">
+                In DELETE verschieben <span class="shortcut-hint">→</span>
+            </button>
+            <button id="undo-button" class="button" style="display: none;" aria-label="Letzte Aktion rückgängig machen">
+                Rückgängig <span class="shortcut-hint">U</span>
+            </button>
+        </div>
+        
+        <div id="delete-info" style="display: none;">
+            <p id="delete-path" aria-live="polite">Die Bilder werden in den Unterordner DELETE verschoben, nicht gelöscht.</p>
+        </div>
+        
+        <div id="delete-list-container" style="display: none;">
+            <h3>In DELETE verschobene Bilder:</h3>
+            <ul id="delete-list" aria-live="polite"></ul>
+        </div>
+        
+        <div id="keyboard-shortcuts" style="display: none;">
+            <h3>Tastenkürzel</h3>
+            <ul>
+                <li><span class="key">←</span> Bild behalten und zum nächsten gehen</li>
+                <li><span class="key">→</span> Bild in DELETE verschieben und zum nächsten gehen</li>
+                <li><span class="key">U</span> Letzte Aktion rückgängig machen</li>
+                <li><span class="key">Z</span> Bild vergrößern/zurücksetzen</li>
+                <li><span class="key">H</span> Diese Hilfe anzeigen/ausblenden</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification" aria-live="assertive"></div>
+    
+    <script>
+        // DOM-Elemente
+        const body = document.body;
+        const themeToggle = document.getElementById('theme-toggle');
+        const helpButton = document.getElementById('help-button');
+        const selectFolder = document.getElementById('select-folder');
+        const pathDisplay = document.getElementById('path');
+        const filenameDisplay = document.getElementById('filename');
+        const imageCounter = document.getElementById('image-counter');
+        const infoDisplay = document.getElementById('info');
+        const startScreen = document.getElementById('start-screen');
+        const imageContainer = document.getElementById('image-container');
+        const imageViewer = document.getElementById('current-image');
+        const loadingIndicator = document.getElementById('loading');
+        const overlayLeft = document.querySelector('.overlay-left');
+        const overlayRight = document.querySelector('.overlay-right');
+        const controlsContainer = document.getElementById('controls');
+        const keepButton = document.getElementById('keep-button');
+        const deleteButton = document.getElementById('delete-button');
+        const undoButton = document.getElementById('undo-button');
+        const deleteList = document.getElementById('delete-list');
+        const deleteListContainer = document.getElementById('delete-list-container');
+        const deleteInfo = document.getElementById('delete-info');
+        const deletePathDisplay = document.getElementById('delete-path');
+        const keyboardShortcuts = document.getElementById('keyboard-shortcuts');
+        const notification = document.getElementById('notification');
+
+        // Zustandsvariablen
+        let currentDirPath = '';
+        let dirHandle = null;
+        let deleteDirHandle = null;
+        let imageFiles = [];
+        let deletedImages = [];
+        let lastDeletedImage = null;
+        let currentIndex = 0;
+        let isProcessing = false;
+        let isZoomed = false;
+        let touchStartX = 0;
+        let pathSeparator = '/';
+        let preloadedImages = {};
+        
+        // Betriebssystem erkennen
+        const platform = navigator.platform.toLowerCase();
+        if (platform.includes('win')) {
+            pathSeparator = '\\';
+        } else if (platform.includes('mac')) {
+            pathSeparator = '/';
+        } else {
+            pathSeparator = '/';
+        }
+
+        // Benachrichtigungsfunktion
+        function showNotification(message, duration = 3000) {
+            notification.textContent = message;
+            notification.classList.add('visible');
+            setTimeout(() => {
+                notification.classList.remove('visible');
+            }, duration);
+        }
+
+        // Hilfsfunktion zum Löschen von Objekt-URLs
+        function cleanupObjectURLs() {
+            // Aktuelle Bild-URL freigeben
+            if (imageViewer.src && imageViewer.src.startsWith('blob:')) {
+                URL.revokeObjectURL(imageViewer.src.split('#')[0]);
+            }
+            
+            // Vorgeladene Bilder freigeben
+            for (const key in preloadedImages) {
+                if (preloadedImages[key].startsWith('blob:')) {
+                    URL.revokeObjectURL(preloadedImages[key]);
+                }
+            }
+            preloadedImages = {};
+        }
+
+        // Theme Toggle
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light');
+            body.classList.toggle('dark');
+            themeToggle.textContent = body.classList.contains('dark') ? 'Light Mode ☀️' : 'Dark Mode 🌙';
+            localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Hilfe-Button
+        helpButton.addEventListener('click', () => {
+            keyboardShortcuts.style.display = keyboardShortcuts.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Gespeichertes Theme laden
+        if (localStorage.getItem('theme') === 'light') {
+            body.classList.add('light');
+            body.classList.remove('dark');
+            themeToggle.textContent = 'Dark Mode 🌙';
+        }
+
+        // Ordnerauswahl
+        selectFolder.addEventListener('click', async () => {
+            try {
+                dirHandle = await window.showDirectoryPicker();
+                await initializeApp();
+            } catch (error) {
+                console.error('Fehler:', error);
+                showNotification('Ein Fehler ist aufgetreten: ' + (error.message || 'Unbekannter Fehler'));
+            }
+        });
+        
+        // App initialisieren
+        async function initializeApp() {
+            try {
+                // DELETE-Ordner erstellen
+                deleteDirHandle = await dirHandle.getDirectoryHandle('DELETE', { create: true });
+
+                currentDirPath = dirHandle.name;
+                pathDisplay.textContent = `Pfad: ${currentDirPath}`;
+                deletePathDisplay.textContent = `Die Bilder werden in den Unterordner DELETE verschoben, nicht gelöscht.`;
+                deleteInfo.style.display = 'block';
+
+                // Bilder laden
+                loadingIndicator.style.display = 'block';
+                imageFiles = [];
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file' && /\.(jpg|jpeg|png|gif|webp)$/i.test(entry.name)) {
+                        imageFiles.push(entry);
+                    }
+                }
+                
+                // Bilder alphabetisch nach Dateinamen sortieren
+                imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+                
+                loadingIndicator.style.display = 'none';
+
+                if (imageFiles.length === 0) {
+                    showNotification('Keine Bilder im Ordner gefunden.');
+                    return;
+                }
+
+                // UI vorbereiten
+                currentIndex = 0;
+                startScreen.style.display = 'none';
+                selectFolder.style.display = 'none';
+                imageContainer.style.display = 'block';
+                controlsContainer.style.display = 'flex';
+                infoDisplay.innerHTML = 'Du kannst <b>Pfeiltasten</b>, <b>Klicks</b> oder <b>Wischgesten</b> verwenden.<br>Bilder werden in den Unterordner "DELETE" verschoben, nicht gelöscht.';
+                deleteList.innerHTML = '';
+                deleteListContainer.style.display = 'block';
+                deletedImages = [];
+                lastDeletedImage = null;
+                undoButton.style.display = 'none';
+
+                // Erstes Bild anzeigen
+                await showImage();
+                
+                // Nächstes Bild vorladen
+                if (imageFiles.length > 1) {
+                    preloadImage((currentIndex + 1) % imageFiles.length);
+                }
+            } catch (error) {
+                console.error('Fehler bei der Initialisierung:', error);
+                showNotification('Fehler bei der Initialisierung: ' + (error.message || 'Unbekannter Fehler'));
+            }
+        }
+
+        // Neue Funktion zur Neuindizierung aller Bilder im Ordner
+        async function reindexFiles(fileNameToFocus = null) {
+            try {
+                isProcessing = true;
+                loadingIndicator.style.display = 'block';
+                
+                // Speicherplatz freigeben
+                cleanupObjectURLs();
+                
+                // Aktuelle Datei merken, falls kein spezieller Fokus gewünscht ist
+                const currentFileName = fileNameToFocus || 
+                    (currentIndex < imageFiles.length ? imageFiles[currentIndex].name : null);
+                
+                // Alle Bilder neu einlesen
+                imageFiles = [];
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file' && /\.(jpg|jpeg|png|gif|webp)$/i.test(entry.name)) {
+                        imageFiles.push(entry);
+                    }
+                }
+                
+                // Bilder alphabetisch nach Dateinamen sortieren
+                imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+                
+                // Index für wiederhergestelltes Bild oder aktuelles Bild finden
+                if (currentFileName) {
+                    const newIndex = imageFiles.findIndex(file => file.name === currentFileName);
+                    if (newIndex !== -1) {
+                        currentIndex = newIndex;
+                    } else if (imageFiles.length > 0) {
+                        // Wenn das Bild nicht gefunden wird, zeige das erste Bild
+                        currentIndex = 0;
+                    }
+                } else if (imageFiles.length > 0) {
+                    currentIndex = 0;
+                }
+                
+                if (imageFiles.length === 0) {
+                    imageViewer.style.display = 'none';
+                    filenameDisplay.textContent = '';
+                    imageCounter.textContent = '';
+                    infoDisplay.textContent = 'Alle Bilder wurden verarbeitet!';
+                    controlsContainer.style.display = 'none';
+                    startScreen.style.display = 'block';
+                    selectFolder.style.display = 'block';
+                    loadingIndicator.style.display = 'none';
+                    isProcessing = false;
+                    return false;
+                }
+                
+                // Bild neu laden
+                await showImage();
+                
+                // Nächstes Bild vorladen, wenn eines vorhanden ist
+                if (imageFiles.length > 1) {
+                    const nextIndex = (currentIndex + 1) % imageFiles.length;
+                    preloadImage(nextIndex);
+                }
+                
+                isProcessing = false;
+                return true;
+            } catch (error) {
+                console.error('Fehler bei der Neuindizierung:', error);
+                loadingIndicator.style.display = 'none';
+                isProcessing = false;
+                showNotification('Fehler bei der Neuindizierung: ' + (error.message || 'Unbekannter Fehler'));
+                return false;
+            }
+        }
+
+        // Bild anzeigen mit verbesserter Fehlerbehandlung
+        async function showImage() {
+            if (imageFiles.length === 0) return;
+            
+            try {
+                isProcessing = true;
+                loadingIndicator.style.display = 'block';
+                imageViewer.style.display = 'none';
+                
+                // Index-Sicherheitsprüfung
+                if (currentIndex >= imageFiles.length) {
+                    currentIndex = imageFiles.length - 1;
+                } else if (currentIndex < 0) {
+                    currentIndex = 0;
+                }
+                
+                const fileHandle = imageFiles[currentIndex];
+                const file = await fileHandle.getFile();
+                
+                // Alte URL freigeben
+                if (imageViewer.src && imageViewer.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(imageViewer.src.split('#')[0]);
+                }
+                
+                // Neue URL erstellen
+                const url = URL.createObjectURL(file);
+                
+                // Bereits vorgeladenes Bild verwenden, wenn vorhanden
+                if (preloadedImages[fileHandle.name]) {
+                    imageViewer.src = preloadedImages[fileHandle.name];
+                    delete preloadedImages[fileHandle.name]; // Speicher freigeben
+                } else {
+                    imageViewer.src = url;
+                }
+                
+                imageViewer.onload = () => {
+                    loadingIndicator.style.display = 'none';
+                    imageViewer.style.display = 'block';
+                    isProcessing = false;
+                    isZoomed = false;
+                    imageViewer.style.transform = 'scale(1)';
+                };
+                
+                filenameDisplay.textContent = `Datei: ${file.name}`;
+                imageCounter.textContent = `Bild ${currentIndex + 1} von ${imageFiles.length}`;
+            } catch (error) {
+                console.error('Fehler beim Anzeigen des Bildes:', error);
+                loadingIndicator.style.display = 'none';
+                isProcessing = false;
+                showNotification('Fehler beim Laden des Bildes: ' + (error.message || 'Unbekannter Fehler'));
+            }
+        }
+
+        // Nächstes Bild vorladen
+        async function preloadImage(index) {
+            try {
+                const fileHandle = imageFiles[index];
+                const file = await fileHandle.getFile();
+                const url = URL.createObjectURL(file);
+                
+                // Bild vorladen
+                const img = new Image();
+                img.onload = () => {
+                    preloadedImages[fileHandle.name] = url;
+                };
+                img.src = url;
+            } catch (error) {
+                console.error('Fehler beim Vorladen des Bildes:', error);
+            }
+        }
+
+        // Bild behalten
+        async function keepImage() {
+            if (isProcessing || imageFiles.length === 0) return;
+            
+            try {
+                currentIndex = (currentIndex + 1) % imageFiles.length;
+                await showImage();
+                
+                // Nächstes Bild vorladen
+                const nextIndex = (currentIndex + 1) % imageFiles.length;
+                if (nextIndex !== currentIndex) {
+                    preloadImage(nextIndex);
+                }
+                
+                showNotification('Bild behalten');
+            } catch (error) {
+                console.error('Fehler beim Behalten des Bildes:', error);
+                showNotification('Fehler beim Behalten des Bildes');
+            }
+        }
+
+        // Bild in DELETE-Ordner verschieben
+        async function deleteImage() {
+            if (isProcessing || imageFiles.length === 0) return;
+            
+            try {
+                isProcessing = true;
+                const fileHandle = imageFiles[currentIndex];
+                lastDeletedImage = {
+                    index: currentIndex,
+                    fileHandle: fileHandle
+                };
+                
+                await fileHandle.move(deleteDirHandle);
+                deletedImages.push(fileHandle.name);
+                
+                // Listeneintrag hinzufügen
+                const listItem = document.createElement('li');
+                const fileName = document.createElement('span');
+                fileName.textContent = fileHandle.name;
+                
+                const restoreButton = document.createElement('button');
+                restoreButton.textContent = 'Wiederherstellen';
+                restoreButton.className = 'restore-button';
+                restoreButton.setAttribute('data-filename', fileHandle.name);
+                restoreButton.addEventListener('click', restoreImage);
+                
+                listItem.appendChild(fileName);
+                listItem.appendChild(restoreButton);
+                deleteList.appendChild(listItem);
+                
+                // Element aus Image-Array entfernen
+                imageFiles.splice(currentIndex, 1);
+                
+                // Hinweis anzeigen
+                undoButton.style.display = 'block';
+                
+                if (imageFiles.length === 0) {
+                    imageViewer.style.display = 'none';
+                    filenameDisplay.textContent = '';
+                    imageCounter.textContent = '';
+                    infoDisplay.textContent = 'Alle Bilder wurden verarbeitet!';
+                    controlsContainer.style.display = 'none';
+                    startScreen.style.display = 'block';
+                    selectFolder.style.display = 'block';
+                    showNotification('Alle Bilder wurden verarbeitet!', 5000);
+                    isProcessing = false;
+                    return;
+                }
+                
+                // Index anpassen
+                if (currentIndex >= imageFiles.length) {
+                    currentIndex = 0;
+                }
+                
+                await showImage();
+                
+                // Nächstes Bild vorladen
+                if (imageFiles.length > 1) {
+                    const nextIndex = (currentIndex + 1) % imageFiles.length;
+                    preloadImage(nextIndex);
+                }
+                
+                isProcessing = false;
+                showNotification('Bild in DELETE-Ordner verschoben');
+            } catch (error) {
+                console.error('Fehler beim Verschieben des Bildes:', error);
+                isProcessing = false;
+                showNotification('Fehler beim Verschieben des Bildes: ' + (error.message || 'Unbekannter Fehler'));
+            }
+        }
+
+        // Letzte Aktion rückgängig machen
+        async function undoLastAction() {
+            if (!lastDeletedImage || isProcessing) return;
+            
+            try {
+                isProcessing = true;
+                showNotification('Wiederherstellung...');
+                
+                const { fileHandle, index } = lastDeletedImage;
+                
+                // Datei aus DELETE-Ordner wiederherstellen
+                const fileInDelete = await deleteDirHandle.getFileHandle(fileHandle.name);
+                await fileInDelete.move(dirHandle);
+                
+                // Listeneintrag entfernen
+                const deletedIndex = deletedImages.indexOf(fileHandle.name);
+                if (deletedIndex !== -1) {
+                    deletedImages.splice(deletedIndex, 1);
+                    const items = deleteList.querySelectorAll('li');
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].querySelector('span').textContent === fileHandle.name) {
+                            deleteList.removeChild(items[i]);
+                            break;
+                        }
+                    }
+                }
+                
+                // Ordner komplett neu einlesen und das wiederhergestellte Bild fokussieren
+                await reindexFiles(fileHandle.name);
+                
+                lastDeletedImage = null;
+                undoButton.style.display = 'none';
+                isProcessing = false;
+                showNotification('Bild wiederhergestellt');
+            } catch (error) {
+                console.error('Fehler beim Wiederherstellen:', error);
+                isProcessing = false;
+                showNotification('Fehler beim Wiederherstellen: ' + (error.message || 'Unbekannter Fehler'));
+            }
+        }
+
+        // Bild aus der Liste wiederherstellen
+        async function restoreImage(event) {
+            if (isProcessing) return;
+            
+            try {
+                isProcessing = true;
+                const button = event.target;
+                const filename = button.getAttribute('data-filename');
+                showNotification('Wiederherstellung...');
+                
+                // Datei aus DELETE-Ordner wiederherstellen
+                const fileInDelete = await deleteDirHandle.getFileHandle(filename);
+                await fileInDelete.move(dirHandle);
+                
+                // Listeneintrag entfernen
+                const deletedIndex = deletedImages.indexOf(filename);
+                if (deletedIndex !== -1) {
+                    deletedImages.splice(deletedIndex, 1);
+                    const listItem = button.parentNode;
+                    deleteList.removeChild(listItem);
+                }
+                
+                // Ordner komplett neu einlesen und das wiederhergestellte Bild fokussieren
+                await reindexFiles(filename);
+                
+                isProcessing = false;
+                showNotification('Bild wiederhergestellt');
+            } catch (error) {
+                console.error('Fehler beim Wiederherstellen aus der Liste:', error);
+                isProcessing = false;
+                showNotification('Fehler beim Wiederherstellen: ' + (error.message || 'Unbekannter Fehler'));
+            }
+        }
+
+        // Zoomen (Umschalten)
+        function toggleZoom() {
+            if (isProcessing || imageFiles.length === 0) return;
+            
+            isZoomed = !isZoomed;
+            imageViewer.style.transform = isZoomed ? 'scale(1.5)' : 'scale(1)';
+        }
+
+        // Event-Listener für Tastaturbedienung
+        document.addEventListener('keydown', (event) => {
+            // Für den H-Schlüssel unabhängig vom Bilderstatus
+            if (event.key === 'h' || event.key === 'H') {
+                keyboardShortcuts.style.display = keyboardShortcuts.style.display === 'none' ? 'block' : 'none';
+                return;
+            }
+            
+            // Für alle anderen Tastenkürzel nur, wenn Bilder vorhanden sind
+            if (imageFiles.length === 0) return;
+            
+            switch (event.key) {
+                case 'ArrowLeft':
+                    keepImage();
+                    break;
+                case 'ArrowRight':
+                    deleteImage();
+                    break;
+                case 'u':
+                case 'U':
+                    undoLastAction();
+                    break;
+                case 'z':
+                case 'Z':
+                    toggleZoom();
+                    break;
+            }
+        });
+
+        // Event-Listener für Overlay-Klicks
+        overlayLeft.addEventListener('click', keepImage);
+        overlayRight.addEventListener('click', deleteImage);
+
+        // Event-Listener für Buttons
+        keepButton.addEventListener('click', keepImage);
+        deleteButton.addEventListener('click', deleteImage);
+        undoButton.addEventListener('click', undoLastAction);
+
+        // Touch-Events für Swipe-Gesten
+        imageContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        imageContainer.addEventListener('touchend', (e) => {
+            if (isProcessing) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const diffX = touchEndX - touchStartX;
+            
+            // Horizontaler Swipe
+            if (Math.abs(diffX) > 50) { // Mindestens 50px für einen Swipe
+                if (diffX > 0) {
+                    // Swipe nach rechts -> Behalten
+                    keepImage();
+                } else {
+                    // Swipe nach links -> In DELETE verschieben
+                    deleteImage();
+                }
+            }
+        }, { passive: true });
+
+        // Doppelklick zum Zoomen
+        imageViewer.addEventListener('dblclick', toggleZoom);
+    </script>
+</body>
+</html>
