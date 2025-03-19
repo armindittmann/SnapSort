@@ -4,6 +4,8 @@
 
 SnapSort ist eine Browser-basierte Anwendung zum schnellen und effektiven Sortieren von Bildersammlungen. Die App ermöglicht es, Bilder intuitiv durch einfache Gesten zu organisieren, während alle aussortieren Bilder sicher in einem DELETE-Unterordner aufbewahrt werden.
 
+Link zur App: https://armindittmann.github.io/snapsort/
+
 ## Features
 
 - 🖱️ Mehrere Interaktionsmöglichkeiten: Tastatur, Mausklick oder Touch-Gesten
